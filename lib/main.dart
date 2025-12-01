@@ -1,72 +1,120 @@
 import 'package:flutter/material.dart';
-import 'screens/cart_screen.dart';
-import 'screens/home_screen.dart';
-import 'screens/login_screen.dart';
-import 'screens/menu_screen.dart';
-import 'screens/product_detail_screen.dart';
-import 'screens/profile_screen.dart';
-import 'screens/registration_screen.dart';
-import 'screens/checkout_screen.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:mobiledevelopment2025/models/user_model.dart';
+import 'package:mobiledevelopment2025/repo/i_auth_repository.dart';
+import 'package:mobiledevelopment2025/repo/i_user_repository.dart';
+import 'package:mobiledevelopment2025/repo/local_auth_repository.dart';
+import 'package:mobiledevelopment2025/repo/local_user_repository.dart';
+import 'package:mobiledevelopment2025/services/auth_service.dart';
+import 'package:mobiledevelopment2025/services/i_session_service.dart';
+import 'package:mobiledevelopment2025/services/local_session_service.dart';
+import 'package:mobiledevelopment2025/services/user_service.dart';
 
-void main() {
-  runApp(const PizzaApp());
+import 'screens/login_screen.dart';
+import 'screens/profile_screen.dart';
+
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Hive.initFlutter();
+  Hive.registerAdapter(UserAdapter());
+  await Hive.openBox<User>('users');
+
+  runApp(const MyApp());
 }
 
-class PizzaApp extends StatelessWidget {
-  const PizzaApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
+
+    // Рівень Даних
+    final IAuthRepository authRepository = LocalAuthRepository();
+    final IUserRepository userRepository = LocalUserRepository();
+    final ISessionService sessionService = LocalSessionService();
+
+    // Рівень Бізнес-Логіки
+    final authService = AuthService(
+      authRepository,
+      sessionService,
+    );
+    final userService = UserService(
+      userRepository,
+      sessionService,
+    );
+    // === Кінець ініціалізації ===
+
     return MaterialApp(
-      title: 'Pizza Delivery',
-      debugShowCheckedModeBanner: false,
+      title: 'Auth App Demo',
       theme: ThemeData(
-        brightness: Brightness.light,
-        primaryColor: Colors.orange,
-        scaffoldBackgroundColor: Colors.grey[100],
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8.0),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 16.0),
-          ),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: Colors.white,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8.0),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8.0),
-            borderSide: const BorderSide(color: Colors.orange),
-          ),
-        ),
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.grey[100],
-          elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.black),
-          titleTextStyle: const TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+        primarySwatch: Colors.orange,
+        inputDecorationTheme: const InputDecorationTheme(
+          border: OutlineInputBorder(),
         ),
       ),
-      initialRoute: '/login',
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/register': (context) => const RegistrationScreen(),
-        '/home': (context) => const HomeScreen(),
-        '/menu': (context) => const MenuScreen(),
-        '/product': (context) => const ProductDetailScreen(),
-        '/cart': (context) => const CartScreen(),
-        '/profile': (context) => const ProfileScreen(),
-        '/checkout': (context) => const CheckoutScreen(),
+      home: _AppInitializer(
+        sessionService: sessionService,
+        authService: authService,
+        userService: userService,
+      ),
+    );
+  }
+}
+
+class _AppInitializer extends StatefulWidget {
+  final ISessionService sessionService;
+  final AuthService authService;
+  final UserService userService;
+
+  const _AppInitializer({
+    required this.sessionService,
+    required this.authService,
+    required this.userService,
+  });
+
+  @override
+  State<_AppInitializer> createState() => _AppInitializerState();
+}
+
+class _AppInitializerState extends State<_AppInitializer> {
+  // Використовуємо Future для визначення початкового екрану
+  late final Future<String?> _sessionFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _sessionFuture = widget.sessionService.getSession();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String?>(
+      future: _sessionFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          // Екран завантаження, поки ми перевіряємо сесію
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final bool isLoggedIn = snapshot.hasData && snapshot.data != null;
+
+        if (isLoggedIn) {
+          // Якщо сесія є, одразу кидаємо на Профіль
+          return ProfileScreen(
+            authService: widget.authService,
+            userService: widget.userService,
+          );
+        } else {
+          // Якщо сесії немає, показуємо екран Входу
+          return LoginScreen(
+            authService: widget.authService,
+            userService: widget.userService,
+          );
+        }
       },
     );
   }
