@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:mobiledevelopment2025/widgets/info_card.dart'; // Замініть package_name
 import 'package:mobiledevelopment2025/widgets/primary_button.dart';
 import 'package:mobiledevelopment2025/widgets/section_header.dart';
+import 'package:mobiledevelopment2025/providers/mqtt_provider.dart';
 
 class CheckoutScreen extends StatelessWidget {
   const CheckoutScreen({super.key});
@@ -58,9 +60,31 @@ class CheckoutScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16.0),
             child: PrimaryButton(
               text: 'Підтвердити замовлення',
-              onPressed: () {
-                // Повертаємось на головну, очистивши стек
-                Navigator.popUntil(context, ModalRoute.withName('/home'));
+              onPressed: () async {
+                final mqttProvider = Provider.of<MqttProvider>(context, listen: false);
+
+                // 1. Переконуємось, що ми підключені (якщо ні - пробуємо ще раз)
+                if (!mqttProvider.isConnected) {
+                  await mqttProvider.connect();
+                }
+
+                // 2. Підписуємось на конкретне замовлення
+                // Для тесту використовуємо ID 101, як в прикладі OrderTrackingScreen
+                if (mqttProvider.isConnected) {
+                  mqttProvider.subscribeToOrder('101');
+
+                  // 3. Перехід на екран трекінгу
+                  Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      '/tracking',
+                      ModalRoute.withName('/home')
+                  );
+                } else {
+                  // Показати помилку користувачу
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Не вдалося підключитися до сервера')),
+                  );
+                }
               },
             ),
           ),

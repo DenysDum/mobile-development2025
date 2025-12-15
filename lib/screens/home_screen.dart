@@ -14,6 +14,12 @@ class HomeScreen extends StatelessWidget {
         leading: const Icon(Icons.menu),
         actions: [
           IconButton(
+            icon: const Icon(Icons.timer_outlined, color: Colors.orange),
+            onPressed: () {
+              Navigator.pushNamed(context, '/tracking');
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.shopping_cart_outlined),
             onPressed: () {
               Navigator.pushNamed(context, '/cart');

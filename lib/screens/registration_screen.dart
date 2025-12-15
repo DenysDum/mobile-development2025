@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // Додаємо Provider
 import 'package:mobiledevelopment2025/services/auth_service.dart';
 import 'package:mobiledevelopment2025/util/validation_utils.dart';
-// ЗНОВУ ВИКОРИСТОВУЄМО НАШ ВІДЖЕТ
 import 'package:mobiledevelopment2025/widgets/custom_text_field.dart';
 import 'package:mobiledevelopment2025/widgets/primary_button.dart';
 
 class RegistrationScreen extends StatefulWidget {
-  final AuthService authService;
-
-  const RegistrationScreen({super.key, required this.authService});
+  // Прибрали конструктор
+  const RegistrationScreen({super.key});
 
   @override
   State<RegistrationScreen> createState() => _RegistrationScreenState();
@@ -34,7 +33,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   }
 
   Future<void> _register() async {
-    // ... (вся логіка _register() залишається ТАКОЮ Ж САМОЮ)
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -44,7 +42,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       _apiError = null;
     });
 
-    final error = await widget.authService.register(
+    // Отримуємо сервіс через Provider
+    final authService = context.read<AuthService>();
+
+    final error = await authService.register(
       name: _nameController.text,
       email: _emailController.text,
       password: _passwordController.text,
@@ -77,7 +78,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // === ПОВЕРНУЛИ CustomTextField ===
                   CustomTextField(
                     controller: _nameController,
                     hintText: 'Ваше ім\'я',
@@ -110,7 +110,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       return null;
                     },
                   ),
-                  // ==================================
                   if (_apiError != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 12.0),

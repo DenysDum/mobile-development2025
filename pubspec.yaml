@@ -42,6 +42,8 @@ dependencies:
   injectable: ^2.0.0
   flutter_bloc: ^8.0.1
   shared_preferences: ^2.2.3
+  provider: ^6.0.5
+  mqtt_client: ^9.6.8
 
 dev_dependencies:
   flutter_test:

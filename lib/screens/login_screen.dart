@@ -1,20 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // 1. Додаємо Provider
 import 'package:mobiledevelopment2025/services/auth_service.dart';
-import 'package:mobiledevelopment2025/services/user_service.dart';
+// UserService тут потрібен лише якщо ви плануєте його десь використовувати,
+// але для самої логіки логіну він не критичний, хіба що для навігації далі.
 import 'package:mobiledevelopment2025/screens/registration_screen.dart';
-import 'package:mobiledevelopment2025/screens/profile_screen.dart';
 import 'package:mobiledevelopment2025/widgets/custom_text_field.dart';
 import 'package:mobiledevelopment2025/widgets/primary_button.dart';
 
 class LoginScreen extends StatefulWidget {
-  final AuthService authService;
-  final UserService userService;
-
-  const LoginScreen({
-    super.key,
-    required this.authService,
-    required this.userService,
-  });
+  // 2. Прибрали поля та конструктор з параметрами
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -39,7 +34,11 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
 
-    final error = await widget.authService.login(
+    // 3. Отримуємо доступ до сервісу через Provider
+    // listen: false, тому що нам потрібно лише викликати метод, а не слухати зміни
+    final authService = Provider.of<AuthService>(context, listen: false);
+
+    final error = await authService.login(
       _emailController.text,
       _passwordController.text,
     );
@@ -52,15 +51,8 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     if (error == null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ProfileScreen(
-            authService: widget.authService,
-            userService: widget.userService,
-          ),
-        ),
-      );
+      // Новий код веде на Головну (маршрут '/home' прописаний у main.dart)
+      Navigator.pushReplacementNamed(context, '/home');
     }
   }
 
@@ -78,20 +70,18 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 40),
-                // === ПОВЕРНУЛИ CustomTextField ===
                 CustomTextField(
-                  controller: _emailController, // Передаємо контролер
+                  controller: _emailController,
                   hintText: 'Email',
                   icon: Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress,
                 ),
                 CustomTextField(
-                  controller: _passwordController, // Передаємо контролер
+                  controller: _passwordController,
                   hintText: 'Пароль',
                   icon: Icons.lock_outline,
                   obscureText: true,
                 ),
-                // ==================================
                 if (_errorMessage != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 12.0),
@@ -108,13 +98,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: _login,
                 ),
                 TextButton(
-                  onPressed: _isLoading ? null : () {
+                  onPressed: _isLoading
+                      ? null
+                      : () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => RegistrationScreen(
-                          authService: widget.authService,
-                        ),
+                        // Навігація без параметрів
+                        builder: (context) => const RegistrationScreen(),
                       ),
                     );
                   },
