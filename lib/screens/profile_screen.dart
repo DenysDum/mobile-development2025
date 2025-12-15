@@ -1,5 +1,6 @@
 // lib/screens/profile_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // Додаємо Provider
 import 'package:mobiledevelopment2025/models/user_model.dart';
 import 'package:mobiledevelopment2025/services/auth_service.dart';
 import 'package:mobiledevelopment2025/services/user_service.dart';
@@ -8,14 +9,8 @@ import 'package:mobiledevelopment2025/widgets/primary_button.dart';
 import 'package:mobiledevelopment2025/widgets/profile_list_item.dart';
 
 class ProfileScreen extends StatefulWidget {
-  final AuthService authService;
-  final UserService userService;
-
-  const ProfileScreen({
-    super.key,
-    required this.authService,
-    required this.userService,
-  });
+  // Прибрали параметри
+  const ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -32,8 +27,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadUserData() async {
-    setState(() { _isLoading = true; });
-    final user = await widget.userService.getCurrentUser();
+    setState(() {
+      _isLoading = true;
+    });
+
+    // Отримуємо UserService через Provider
+    final userService = context.read<UserService>();
+    final user = await userService.getCurrentUser();
+
     if (mounted) {
       setState(() {
         _currentUser = user;
@@ -43,15 +44,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _logout() async {
-    await widget.authService.logout();
+    // Отримуємо AuthService через Provider
+    final authService = context.read<AuthService>();
+    await authService.logout();
+
     if (mounted) {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
-          builder: (context) => LoginScreen(
-            authService: widget.authService,
-            userService: widget.userService,
-          ),
+          builder: (context) => const LoginScreen(),
         ),
             (route) => false,
       );
@@ -72,17 +73,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 20),
             const CircleAvatar(
               radius: 50,
-              backgroundImage:
-              NetworkImage('https://picsum.photos/id/1005/200/200'),
+              backgroundImage: NetworkImage(
+                  'https://picsum.photos/id/1005/200/200'),
             ),
             const SizedBox(height: 12),
             Text(
               _currentUser!.name,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                  fontSize: 22, fontWeight: FontWeight.bold),
             ),
             Text(
               _currentUser!.email,
-              style: const TextStyle(fontSize: 16, color: Colors.grey),
+              style: const TextStyle(
+                  fontSize: 16, color: Colors.grey),
             ),
             const SizedBox(height: 30),
             ProfileListItem(
